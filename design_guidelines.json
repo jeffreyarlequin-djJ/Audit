@@ -1,0 +1,150 @@
+{
+  "identity": {
+    "name": "Swiss Telecom QA",
+    "archetype": "Swiss High-Contrast (Authority, Clarity, Truth)",
+    "tone": "Clinical, Precise, Objective, Professional",
+    "vibe": "Control Room meets Art Gallery"
+  },
+  "typography": {
+    "font_family": {
+      "headings": "\"Barlow Condensed\", sans-serif",
+      "body": "\"IBM Plex Sans\", sans-serif",
+      "mono": "\"JetBrains Mono\", monospace"
+    },
+    "scale": {
+      "h1": "text-5xl font-bold tracking-tight uppercase",
+      "h2": "text-3xl font-semibold tracking-tight uppercase",
+      "h3": "text-xl font-medium tracking-normal",
+      "body": "text-base font-normal leading-relaxed",
+      "label": "text-xs font-bold tracking-widest uppercase text-muted-foreground",
+      "mono": "text-sm font-mono text-primary/80"
+    },
+    "installation_url": "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+  },
+  "colors": {
+    "palette": {
+      "primary": "#0F172A",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#F3F4F6",
+      "secondary_foreground": "#0F172A",
+      "accent": "#FF5722",
+      "accent_foreground": "#FFFFFF",
+      "background": "#FFFFFF",
+      "surface": "#F8FAFC",
+      "border": "#E2E8F0",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "neutral": "#64748B"
+    },
+    "usage": {
+      "background": "bg-white",
+      "surface_card": "bg-white border border-border",
+      "surface_hover": "hover:bg-accent/5",
+      "text_primary": "text-slate-900",
+      "text_secondary": "text-slate-500",
+      "brand_accent": "text-orange-600",
+      "border_subtle": "border-slate-200"
+    },
+    "gradients": {
+      "allowed": false,
+      "rule": "No gradients. Flat colors only for maximum data clarity."
+    }
+  },
+  "layout": {
+    "grid_system": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-4 p-4 md:p-6",
+      "card_internal": "flex flex-col gap-2"
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "section_gap": "gap-8",
+      "item_gap": "gap-4"
+    },
+    "radius": {
+      "default": "rounded-none",
+      "button": "rounded-sm",
+      "card": "rounded-sm",
+      "input": "rounded-none"
+    },
+    "shadows": {
+      "card": "shadow-none",
+      "dropdown": "shadow-lg border border-slate-200",
+      "hover": "shadow-none"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-slate-900 text-white hover:bg-orange-600 rounded-sm uppercase tracking-wider text-xs font-bold px-6 py-3 transition-colors duration-200",
+      "secondary": "bg-slate-100 text-slate-900 hover:bg-slate-200 rounded-sm uppercase tracking-wider text-xs font-bold px-6 py-3",
+      "outline": "border border-slate-300 bg-transparent hover:border-slate-900 text-slate-900 rounded-sm uppercase tracking-wider text-xs font-bold px-6 py-3",
+      "ghost": "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+    },
+    "cards": {
+      "style": "bg-white border border-slate-200 rounded-sm p-6 relative overflow-hidden",
+      "hover_effect": "hover:border-slate-400 transition-colors duration-200"
+    },
+    "inputs": {
+      "style": "rounded-sm border-slate-300 focus:border-orange-500 focus:ring-0 bg-slate-50/50"
+    },
+    "status_badges": {
+      "success": "bg-emerald-100 text-emerald-700 border border-emerald-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1",
+      "warning": "bg-amber-100 text-amber-700 border border-amber-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1",
+      "error": "bg-red-100 text-red-700 border border-red-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1",
+      "neutral": "bg-slate-100 text-slate-700 border border-slate-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1"
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Use subtle noise/grain on the sidebar navigation background only.",
+    "decorations": "Use 1px grid lines (opacity 10%) in the dashboard background to emphasize precision.",
+    "borders": "All borders should be 1px solid. No fuzzy borders."
+  },
+  "motion": {
+    "guidelines": "Fast, linear, and efficient. No bounces. No springs.",
+    "duration": "duration-150",
+    "easing": "ease-out"
+  },
+  "images": {
+    "style": "Black and white filters for avatars. High contrast technical diagrams.",
+    "hero_bg": "https://images.unsplash.com/photo-1765046255500-ce203b84c307?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG5ldHdvcmslMjBkYXRhJTIwdmlzdWFsaXphdGlvbiUyMG1pbmltYWx8ZW58MHx8fHwxNzcyNzkxMjYzfDA&ixlib=rb-4.1.0&q=85",
+    "auth_bg": "https://images.unsplash.com/photo-1765046255478-55efc763637c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMG5ldHdvcmslMjBkYXRhJTIwdmlzdWFsaXphdGlvbiUyMG1pbmltYWx8ZW58MHx8fHwxNzcyNzkxMjYzfDA&ixlib=rb-4.1.0&q=85",
+    "avatars": [
+      "https://images.unsplash.com/photo-1627401632925-a4c565d08a80?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NjZ8MHwxfHNlYXJjaHw0fHx0ZWxlY29tJTIwZW5naW5lZXIlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzI3OTEyNjV8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1753451254673-008bd0b22807?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NjZ8MHwxfHNlYXJjaHwyfHx0ZWxlY29tJTIwZW5naW5lZXIlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzI3OTEyNjV8MA&ixlib=rb-4.1.0&q=85"
+    ]
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Stroke width 1.5px. Sharp edges where possible."
+  },
+  "charts": {
+    "library": "recharts",
+    "palette": ["#0F172A", "#FF5722", "#94A3B8", "#CBD5E1", "#E2E8F0"],
+    "style": "Minimalist. No grid lines on charts if possible. Tooltips must be high contrast (Black bg, White text)."
+  },
+  "universal_guidelines": [
+    "Do not use gradients.",
+    "Do not use rounded-xl or rounded-2xl. Maximum rounded-sm.",
+    "Headings must be uppercase and condensed.",
+    "Use distinct borders for separation, not shadows.",
+    "Interactive elements must have a clear hover state (text color change or background tint).",
+    "Data density should be high. Do not use excessive whitespace inside data tables.",
+    "All text must be legible. Minimum contrast ratio 4.5:1."
+  ],
+  "accessibility": {
+    "contrast": "Strict adherence to WCAG AA.",
+    "focus_states": "Visible focus rings in Orange (#FF5722) for keyboard navigation."
+  },
+  "tech_stack": {
+    "frontend": "React (JS), Tailwind CSS, Shadcn UI (Radix), Recharts, Framer Motion",
+    "backend": "FastAPI"
+  },
+  "instructions_to_main_agent": [
+    "You are building the frontend mostly.",
+    "Use the 'Bento' grid layout for the main dashboard overview.",
+    "The Ticket Analysis Overlay should be a 'Sheet' component (sliding from right) or a 'Dialog' with a very clean, document-like structure.",
+    "Prioritize French language content mocking.",
+    "Ensure all components are strictly typed if using JSDoc/PropTypes, or just clean JS.",
+    "Use the images provided for empty states or dashboard decoration."
+  ]
+}
