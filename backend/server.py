@@ -381,7 +381,7 @@ async def get_tickets(
         query.setdefault("created_at", {})["$lte"] = date_to
 
     sort_order = -1 if sort == "desc" else 1
-    tickets = await db.tickets.find(query, {"_id": 0}).sort("created_at", sort_order).skip(skip).limit(limit).to_list(limit)
+    tickets = await db.tickets.find(query, {"_id": 0, "content": 0}).sort("created_at", sort_order).skip(skip).limit(limit).to_list(limit)
     total = await db.tickets.count_documents(query)
     return {"tickets": tickets, "total": total}
 
@@ -398,7 +398,7 @@ async def export_tickets(agent: Optional[str] = None, priority: Optional[str] = 
     if priority:
         query["priority"] = {"$regex": priority, "$options": "i"}
 
-    tickets = await db.tickets.find(query, {"_id": 0}).sort("created_at", -1).to_list(5000)
+    tickets = await db.tickets.find(query, {"_id": 0}).sort("created_at", -1).limit(1000).to_list(1000)
 
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
