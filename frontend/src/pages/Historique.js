@@ -160,13 +160,15 @@ export default function Historique() {
                       style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
                       {selected.ticket_ref || "Ticket"}
                     </SheetTitle>
-                    <SheetDescription>
-                      <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-widest mr-2">
-                        {selected.priority || "N/A"}
-                      </Badge>
-                      <span className="text-xs text-slate-500">
-                        {new Date(selected.created_at).toLocaleDateString("fr-FR")}
-                      </span>
+                    <SheetDescription asChild>
+                      <div>
+                        <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-widest mr-2">
+                          {selected.priority || "N/A"}
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          {new Date(selected.created_at).toLocaleDateString("fr-FR")}
+                        </span>
+                      </div>
                     </SheetDescription>
                   </div>
                 </div>

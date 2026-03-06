@@ -157,11 +157,13 @@ export default function AnalyseTicket() {
                       style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
                       Resultat d'Analyse
                     </SheetTitle>
-                    <SheetDescription className="mt-1">
-                      {result.ticket_ref && <span className="font-mono text-sm mr-3">{result.ticket_ref}</span>}
-                      <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-widest">
-                        {getScoreLabel(result.score_global)}
-                      </Badge>
+                    <SheetDescription asChild className="mt-1">
+                      <div>
+                        {result.ticket_ref && <span className="font-mono text-sm mr-3">{result.ticket_ref}</span>}
+                        <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-widest">
+                          {getScoreLabel(result.score_global)}
+                        </Badge>
+                      </div>
                     </SheetDescription>
                   </div>
                 </div>
