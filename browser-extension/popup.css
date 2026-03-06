@@ -342,4 +342,38 @@ body {
   line-height: 1.5;
 }
 
-.captured-content { margin-top: 8px; }
+.btn-secondary-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 8px;
+}
+
+.btn-secondary-sm:hover { border-color: #0f172a; color: #0f172a; }
+
+.info-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #92400e;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.info-box strong { color: #78350f; }
+
+.captured-content { margin-top: 0; margin-bottom: 8px; }

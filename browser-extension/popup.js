@@ -5,12 +5,60 @@ const CRITERIA_LABELS = {
   cloture: "Cloture", comprehension: "Comprehension"
 };
 
+// Content extraction function - injected into the page
+function extractAllContent() {
+  // Try specific ticketing system selectors first
+  const selectors = [
+    // ServiceNow
+    ".sn-widget-textblock-body", ".activity-stream", ".sn-form-fields",
+    ".form_section", ".nav_content", "#output_messages",
+    // BMC Remedy / ITSM
+    ".ardbn", ".arfid", ".ticket-form", ".form-content",
+    // Jira Service Desk
+    "[data-testid='issue.views.issue-base.content']", ".issue-body-content",
+    // Zendesk
+    ".ticket_body", ".comment_body", ".ticket-content",
+    // General ITSM / ticketing systems
+    "main", "[role='main']", ".incident-detail", "#ticket-content",
+    ".case-detail", ".record-detail", "article", ".content-area",
+    ".detail-view", ".case-content", ".work-notes",
+    // Tables containing ticket data
+    "table.list", ".data-table", ".record-table",
+    // Generic content containers
+    ".container main", "#main-content", ".page-content", ".app-content",
+    "[role='document']"
+  ];
+
+  for (const sel of selectors) {
+    try {
+      const elements = document.querySelectorAll(sel);
+      if (elements.length > 0) {
+        const combined = Array.from(elements).map(el => el.innerText.trim()).join("\n\n");
+        if (combined.length > 50) return combined;
+      }
+    } catch (e) { /* skip invalid selectors */ }
+  }
+
+  // Fallback: get all visible text from body, filtering out scripts/styles
+  const body = document.body;
+  if (body) {
+    const clone = body.cloneNode(true);
+    // Remove script, style, nav, footer elements
+    clone.querySelectorAll("script, style, nav, footer, header, [aria-hidden='true']").forEach(el => el.remove());
+    const text = clone.innerText.trim();
+    if (text.length > 50) return text;
+  }
+
+  return document.body ? document.body.innerText.trim() : "";
+}
+
 // DOM elements
 const apiUrlInput = document.getElementById("apiUrl");
 const ticketRefInput = document.getElementById("ticketRef");
 const prioritySelect = document.getElementById("priority");
 const agentNameInput = document.getElementById("agentName");
 const captureBtn = document.getElementById("captureBtn");
+const captureSelectionBtn = document.getElementById("captureSelectionBtn");
 const analyzeBtn = document.getElementById("analyzeBtn");
 const contentText = document.getElementById("contentText");
 const capturedContent = document.getElementById("capturedContent");
@@ -35,48 +83,112 @@ agentNameInput.addEventListener("change", () => {
   chrome.storage.local.set({ agentName: agentNameInput.value });
 });
 
-// Capture page content
+// Capture page content - improved with multiple strategies
 captureBtn.addEventListener("click", async () => {
   setStatus("Capture...", "loading");
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        // Try to get the main content area
-        const selectors = [
-          "main", "[role='main']", ".ticket-content", ".incident-detail",
-          "#ticket-content", ".case-detail", ".record-detail", "article", ".content-area"
-        ];
-        for (const sel of selectors) {
-          const el = document.querySelector(sel);
-          if (el && el.innerText.trim().length > 50) return el.innerText.trim();
-        }
-        // Fallback to body text
-        return document.body.innerText.trim();
-      }
-    });
+    
+    if (!tab || !tab.id) {
+      setStatus("Onglet non accessible", "error");
+      return;
+    }
 
-    const text = results[0]?.result || "";
-    if (text.length > 0) {
-      contentText.value = text.substring(0, 15000); // Limit to 15k chars
+    // Strategy 1: Try main frame
+    let text = "";
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: extractAllContent
+      });
+      text = results[0]?.result || "";
+    } catch (e) {
+      console.log("Main frame capture failed:", e);
+    }
+
+    // Strategy 2: Try all frames (for iframes - ServiceNow, Remedy, etc.)
+    if (text.length < 100) {
+      try {
+        const frameResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: true },
+          func: extractAllContent
+        });
+        // Combine content from all frames
+        const allTexts = frameResults
+          .map(r => r?.result || "")
+          .filter(t => t.length > 20);
+        if (allTexts.length > 0) {
+          // Take the longest content or combine them
+          const combined = allTexts.sort((a, b) => b.length - a.length).join("\n\n---\n\n");
+          if (combined.length > text.length) {
+            text = combined;
+          }
+        }
+      } catch (e) {
+        console.log("All frames capture failed:", e);
+      }
+    }
+
+    if (text.length > 10) {
+      contentText.value = text.substring(0, 15000);
       charCount.textContent = contentText.value.length;
-      capturedContent.style.display = "block";
       analyzeBtn.disabled = false;
-      setStatus("Capture reussie", "success");
+      setStatus("Capture reussie (" + contentText.value.length + " car.)", "success");
     } else {
-      setStatus("Aucun contenu trouve", "error");
+      setStatus("Peu de contenu - collez manuellement", "error");
     }
   } catch (err) {
-    setStatus("Erreur de capture", "error");
-    console.error(err);
+    console.error("Capture error:", err);
+    setStatus("Erreur - collez le contenu manuellement", "error");
   }
 });
 
-// Update char count on manual edit
+// Capture selected text on the page
+captureSelectionBtn.addEventListener("click", async () => {
+  setStatus("Capture selection...", "loading");
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab || !tab.id) {
+      setStatus("Onglet non accessible", "error");
+      return;
+    }
+
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id, allFrames: true },
+      func: () => {
+        const selection = window.getSelection();
+        return selection ? selection.toString().trim() : "";
+      }
+    });
+
+    // Combine selections from all frames
+    const allSelections = results
+      .map(r => r?.result || "")
+      .filter(t => t.length > 0);
+    const selectedText = allSelections.join("\n\n");
+
+    if (selectedText.length > 0) {
+      contentText.value = selectedText.substring(0, 15000);
+      charCount.textContent = contentText.value.length;
+      analyzeBtn.disabled = false;
+      setStatus("Selection capturee (" + contentText.value.length + " car.)", "success");
+    } else {
+      setStatus("Aucune selection - selectionnez du texte d'abord", "error");
+    }
+  } catch (err) {
+    console.error("Selection capture error:", err);
+    setStatus("Erreur - collez le contenu manuellement", "error");
+  }
+});
+
+// Update char count on manual edit and enable analyze button
 contentText.addEventListener("input", () => {
   charCount.textContent = contentText.value.length;
   analyzeBtn.disabled = contentText.value.trim().length === 0;
+  if (contentText.value.trim().length > 0) {
+    setStatus("Pret", "success");
+  }
 });
 
 // Analyze
