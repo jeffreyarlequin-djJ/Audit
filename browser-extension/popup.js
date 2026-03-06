@@ -130,7 +130,7 @@ captureBtn.addEventListener("click", async () => {
     }
 
     if (text.length > 10) {
-      contentText.value = text.substring(0, 15000);
+      contentText.value = text;
       charCount.textContent = contentText.value.length;
       analyzeBtn.disabled = false;
       setStatus("Capture reussie (" + contentText.value.length + " car.)", "success");
@@ -169,7 +169,7 @@ captureSelectionBtn.addEventListener("click", async () => {
     const selectedText = allSelections.join("\n\n");
 
     if (selectedText.length > 0) {
-      contentText.value = selectedText.substring(0, 15000);
+      contentText.value = selectedText;
       charCount.textContent = contentText.value.length;
       analyzeBtn.disabled = false;
       setStatus("Selection capturee (" + contentText.value.length + " car.)", "success");

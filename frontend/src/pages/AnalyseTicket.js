@@ -129,7 +129,7 @@ export default function AnalyseTicket() {
               onChange={e => setContent(e.target.value)}
               placeholder="Collez ici le contenu complet du ticket d'incident..."
               rows={16}
-              className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm font-mono leading-relaxed focus:border-orange-500 focus:outline-none bg-slate-50/50 resize-none"
+              className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm font-mono leading-relaxed focus:border-orange-500 focus:outline-none bg-slate-50/50 resize-y min-h-[200px]"
             />
             <div className="flex items-center justify-between mt-4">
               <span className="text-xs text-slate-400">{content.length} caracteres</span>
