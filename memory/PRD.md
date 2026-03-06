@@ -31,7 +31,16 @@ Application d'audit qualité des tickets d'incident pour une équipe SAV Télép
 - [x] Page statistiques avec graphiques recharts
 - [x] Sidebar navigation
 - [x] Design Swiss High-Contrast implémenté
-- [x] Tests e2e passés (100% backend, 100% intégration)
+
+### Phase 2 (2026-03-06)
+- [x] Nouveau scoring: NA (non visible) / 0 (Mauvais) / 1 (Moyen) / 2 (Bon), score global en % sur 100
+- [x] Nouveau critère: "Compréhension de l'incident" (11 critères total)
+- [x] Champ agent/technicien pour chaque analyse
+- [x] Filtres avancés dans l'historique (agent, priorité, score min/max)
+- [x] Export CSV des analyses
+- [x] Page Comparatif Agents (radar chart + tableau détaillé)
+- [x] Extension navigateur Chrome/Edge/Firefox (capture contenu page + analyse IA)
+- [x] Tests e2e Phase 2 passés (100% backend, 100% frontend, 100% intégration)
 
 ## Prioritized Backlog
 ### P0 (Done)
