@@ -13,5 +13,7 @@ export const getStatistics = () => api.get("/statistics");
 export const getTemplates = () => api.get("/templates");
 export const updateTemplate = (id, data) => api.put(`/templates/${id}`, data);
 export const resetTemplates = () => api.post("/templates/reset");
+export const compareAgents = () => api.get("/agents/compare");
+export const exportTickets = (params) => `${API}/tickets/export?${new URLSearchParams(params).toString()}`;
 
 export default api;

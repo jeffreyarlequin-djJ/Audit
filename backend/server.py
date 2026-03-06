@@ -33,30 +33,31 @@ class TicketInput(BaseModel):
     content: str
     ticket_ref: Optional[str] = ""
     priority: Optional[str] = ""
-
-class AnalysisScore(BaseModel):
-    procedures: int = 0
-    priorite: int = 0
-    description: int = 0
-    acquittement: int = 0
-    sla: int = 0
-    communication: int = 0
-    diagnostic: int = 0
-    statut: int = 0
-    escalade: int = 0
-    cloture: int = 0
+    agent_name: Optional[str] = ""
 
 class TicketAnalysis(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     ticket_ref: str = ""
     priority: str = ""
+    agent_name: str = ""
     content: str
     scores: dict = {}
     score_global: float = 0.0
     details: dict = {}
     recommandations: list = []
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# Scoring: -1=NA, 0=Mauvais, 1=Moyen, 2=Bon
+SCORE_LABELS = {-1: "NA", 0: "Mauvais", 1: "Moyen", 2: "Bon"}
+ALL_CRITERIA = ["procedures", "priorite", "description", "acquittement", "sla", "communication", "diagnostic", "statut", "escalade", "cloture", "comprehension"]
+
+def calc_global_score(scores: dict) -> float:
+    """Calculate global score as percentage (0-100) excluding NA (-1) criteria."""
+    scored = [v for v in scores.values() if isinstance(v, (int, float)) and v >= 0]
+    if not scored:
+        return 0.0
+    return round((sum(scored) / (len(scored) * 2)) * 100, 1)
 
 class TemplateModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -212,12 +213,16 @@ Equipe Support N1 - SAV Telephonie"""
 
 # --- AI Analysis ---
 
-ANALYSIS_SYSTEM_PROMPT = """Tu es un expert en analyse de qualite des tickets d'incident pour un SAV Telephonie de niveau 1 (prestataire Orange). 
+ANALYSIS_SYSTEM_PROMPT = """Tu es un expert en analyse de qualite des tickets d'incident pour un SAV Telephonie de niveau 1 (prestataire Orange).
 Tu dois analyser le contenu d'un ticket d'incident et fournir une evaluation detaillee sur les criteres suivants.
 
-Pour chaque critere, attribue une note de 0 a 10 et fournis un commentaire explicatif.
+BAREME DE NOTATION pour chaque critere :
+- "NA" : le critere n'est pas visible ou pas applicable dans le ticket
+- 0 : Mauvais - le critere est present mais mal traite
+- 1 : Moyen - le critere est partiellement respecte
+- 2 : Bon - le critere est correctement traite
 
-CRITERES D'EVALUATION :
+CRITERES D'EVALUATION (11 criteres) :
 
 1. PROCEDURES (procedures) : Respect des procedures mises en place (workflow, etapes obligatoires)
 2. PRIORITE (priorite) : Bon taggage de la priorite (P1/P2/P3/P4) en coherence avec l'impact et l'urgence
@@ -229,20 +234,24 @@ CRITERES D'EVALUATION :
 8. STATUT (statut) : Bonne gestion des etats du ticket (en cours/gele), coherence des dates et heures de gel avec les actions
 9. ESCALADE (escalade) : Determination si la bonne equipe a ete activee pour investigation
 10. CLOTURE (cloture) : Verification des codes de cloture, dates de retablissement/reparation, details du probleme
+11. COMPREHENSION (comprehension) : Le technicien a-t-il bien compris le probleme remonte par le client ? Les actions menees sont-elles coherentes avec la nature de l'incident ?
+
+IMPORTANT : Si un critere n'est absolument pas visible dans le ticket, mets "NA". Ne mets pas 0 par defaut.
 
 Tu DOIS repondre UNIQUEMENT en JSON valide avec cette structure exacte :
 {
   "scores": {
-    "procedures": <0-10>,
-    "priorite": <0-10>,
-    "description": <0-10>,
-    "acquittement": <0-10>,
-    "sla": <0-10>,
-    "communication": <0-10>,
-    "diagnostic": <0-10>,
-    "statut": <0-10>,
-    "escalade": <0-10>,
-    "cloture": <0-10>
+    "procedures": <"NA" ou 0 ou 1 ou 2>,
+    "priorite": <"NA" ou 0 ou 1 ou 2>,
+    "description": <"NA" ou 0 ou 1 ou 2>,
+    "acquittement": <"NA" ou 0 ou 1 ou 2>,
+    "sla": <"NA" ou 0 ou 1 ou 2>,
+    "communication": <"NA" ou 0 ou 1 ou 2>,
+    "diagnostic": <"NA" ou 0 ou 1 ou 2>,
+    "statut": <"NA" ou 0 ou 1 ou 2>,
+    "escalade": <"NA" ou 0 ou 1 ou 2>,
+    "cloture": <"NA" ou 0 ou 1 ou 2>,
+    "comprehension": <"NA" ou 0 ou 1 ou 2>
   },
   "details": {
     "procedures": "<commentaire>",
@@ -254,7 +263,8 @@ Tu DOIS repondre UNIQUEMENT en JSON valide avec cette structure exacte :
     "diagnostic": "<commentaire>",
     "statut": "<commentaire>",
     "escalade": "<commentaire>",
-    "cloture": "<commentaire>"
+    "cloture": "<commentaire>",
+    "comprehension": "<commentaire>"
   },
   "recommandations": ["<recommandation 1>", "<recommandation 2>", ...],
   "resume": "<resume global de l'analyse en 2-3 phrases>"
@@ -287,12 +297,24 @@ async def analyze_ticket_with_ai(content: str, ticket_ref: str = "", priority: s
         response_text = response_text.strip()
 
         result = json.loads(response_text)
+
+        # Normalize scores: convert "NA" strings to -1
+        scores = result.get("scores", {})
+        for k in ALL_CRITERIA:
+            if k in scores:
+                if scores[k] == "NA" or scores[k] == "na":
+                    scores[k] = -1
+                else:
+                    scores[k] = int(scores[k]) if scores[k] is not None else -1
+            else:
+                scores[k] = -1
+        result["scores"] = scores
         return result
     except json.JSONDecodeError as e:
         logger.error(f"JSON parse error: {e}, response: {response_text[:500]}")
         return {
-            "scores": {k: 5 for k in ["procedures", "priorite", "description", "acquittement", "sla", "communication", "diagnostic", "statut", "escalade", "cloture"]},
-            "details": {k: "Analyse en cours - erreur de parsing" for k in ["procedures", "priorite", "description", "acquittement", "sla", "communication", "diagnostic", "statut", "escalade", "cloture"]},
+            "scores": {k: -1 for k in ALL_CRITERIA},
+            "details": {k: "Analyse en cours - erreur de parsing" for k in ALL_CRITERIA},
             "recommandations": ["Veuillez reessayer l'analyse"],
             "resume": "Erreur lors de l'analyse. Veuillez reessayer."
         }
@@ -313,13 +335,13 @@ async def analyze_ticket(ticket_input: TicketInput):
     analysis = await analyze_ticket_with_ai(ticket_input.content, ticket_input.ticket_ref, ticket_input.priority)
     
     scores = analysis.get("scores", {})
-    score_values = [v for v in scores.values() if isinstance(v, (int, float))]
-    score_global = round(sum(score_values) / len(score_values), 1) if score_values else 0
+    score_global = calc_global_score(scores)
 
     ticket_doc = {
         "id": str(uuid.uuid4()),
         "ticket_ref": ticket_input.ticket_ref,
         "priority": ticket_input.priority,
+        "agent_name": ticket_input.agent_name,
         "content": ticket_input.content,
         "scores": scores,
         "score_global": score_global,
@@ -333,13 +355,73 @@ async def analyze_ticket(ticket_input: TicketInput):
     ticket_doc.pop("_id", None)
     return ticket_doc
 
-# Get all tickets
+# Get all tickets with filters
 @api_router.get("/tickets")
-async def get_tickets(skip: int = 0, limit: int = 50, sort: str = "desc"):
+async def get_tickets(
+    skip: int = 0, limit: int = 50, sort: str = "desc",
+    agent: Optional[str] = None, priority: Optional[str] = None,
+    score_min: Optional[float] = None, score_max: Optional[float] = None,
+    date_from: Optional[str] = None, date_to: Optional[str] = None
+):
+    query = {}
+    if agent:
+        query["agent_name"] = {"$regex": agent, "$options": "i"}
+    if priority:
+        query["priority"] = {"$regex": priority, "$options": "i"}
+    if score_min is not None or score_max is not None:
+        score_q = {}
+        if score_min is not None:
+            score_q["$gte"] = score_min
+        if score_max is not None:
+            score_q["$lte"] = score_max
+        query["score_global"] = score_q
+    if date_from:
+        query.setdefault("created_at", {})["$gte"] = date_from
+    if date_to:
+        query.setdefault("created_at", {})["$lte"] = date_to
+
     sort_order = -1 if sort == "desc" else 1
-    tickets = await db.tickets.find({}, {"_id": 0}).sort("created_at", sort_order).skip(skip).limit(limit).to_list(limit)
-    total = await db.tickets.count_documents({})
+    tickets = await db.tickets.find(query, {"_id": 0}).sort("created_at", sort_order).skip(skip).limit(limit).to_list(limit)
+    total = await db.tickets.count_documents(query)
     return {"tickets": tickets, "total": total}
+
+# Export CSV - MUST come before /tickets/{ticket_id} route
+@api_router.get("/tickets/export")
+async def export_tickets(agent: Optional[str] = None, priority: Optional[str] = None):
+    import csv
+    import io
+    from starlette.responses import StreamingResponse
+
+    query = {}
+    if agent:
+        query["agent_name"] = {"$regex": agent, "$options": "i"}
+    if priority:
+        query["priority"] = {"$regex": priority, "$options": "i"}
+
+    tickets = await db.tickets.find(query, {"_id": 0}).sort("created_at", -1).to_list(5000)
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+    header = ["Reference", "Priorite", "Agent", "Score Global (%)"]
+    for c in ALL_CRITERIA:
+        header.append(c.capitalize())
+    header.extend(["Date", "Resume"])
+    writer.writerow(header)
+
+    for t in tickets:
+        row = [t.get("ticket_ref", ""), t.get("priority", ""), t.get("agent_name", ""), t.get("score_global", 0)]
+        for c in ALL_CRITERIA:
+            val = t.get("scores", {}).get(c, -1)
+            row.append(SCORE_LABELS.get(val, str(val)))
+        row.extend([t.get("created_at", ""), t.get("resume", "")])
+        writer.writerow(row)
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=tickets_export.csv"}
+    )
 
 # Get single ticket
 @api_router.get("/tickets/{ticket_id}")
@@ -370,7 +452,7 @@ async def get_dashboard():
     priority_dist = await db.tickets.aggregate(pipeline_priority).to_list(10)
     priority_data = {item["_id"]: item["count"] for item in priority_dist if item["_id"]}
 
-    # Score distribution by criteria
+    # Score distribution by criteria (include comprehension)
     pipeline_criteria = [
         {"$group": {
             "_id": None,
@@ -383,7 +465,8 @@ async def get_dashboard():
             "diagnostic": {"$avg": "$scores.diagnostic"},
             "statut": {"$avg": "$scores.statut"},
             "escalade": {"$avg": "$scores.escalade"},
-            "cloture": {"$avg": "$scores.cloture"}
+            "cloture": {"$avg": "$scores.cloture"},
+            "comprehension": {"$avg": "$scores.comprehension"}
         }}
     ]
     criteria_result = await db.tickets.aggregate(pipeline_criteria).to_list(1)
@@ -391,20 +474,20 @@ async def get_dashboard():
     if criteria_result:
         for k, v in criteria_result[0].items():
             if k != "_id" and v is not None:
-                criteria_avg[k] = round(v, 1)
+                criteria_avg[k] = round(v, 2)
 
     # Recent tickets
     recent = await db.tickets.find({}, {"_id": 0, "content": 0}).sort("created_at", -1).limit(5).to_list(5)
 
-    # SLA compliance (score sla >= 7 is considered compliant)
-    sla_compliant = await db.tickets.count_documents({"scores.sla": {"$gte": 7}})
+    # SLA compliance (score sla >= 1 is considered at least partially compliant, 2 is fully compliant)
+    sla_compliant = await db.tickets.count_documents({"scores.sla": {"$gte": 2}})
     sla_rate = round((sla_compliant / total_tickets * 100), 1) if total_tickets > 0 else 0
 
-    # Score ranges
-    excellent = await db.tickets.count_documents({"score_global": {"$gte": 8}})
-    bon = await db.tickets.count_documents({"score_global": {"$gte": 6, "$lt": 8}})
-    moyen = await db.tickets.count_documents({"score_global": {"$gte": 4, "$lt": 6}})
-    faible = await db.tickets.count_documents({"score_global": {"$lt": 4}})
+    # Score distribution (percentage-based)
+    excellent = await db.tickets.count_documents({"score_global": {"$gte": 80}})
+    bon = await db.tickets.count_documents({"score_global": {"$gte": 50, "$lt": 80}})
+    moyen = await db.tickets.count_documents({"score_global": {"$gte": 25, "$lt": 50}})
+    faible = await db.tickets.count_documents({"score_global": {"$lt": 25}})
 
     return {
         "total_tickets": total_tickets,
@@ -438,7 +521,8 @@ async def get_statistics():
             "diagnostic": {"$avg": "$scores.diagnostic"},
             "statut": {"$avg": "$scores.statut"},
             "escalade": {"$avg": "$scores.escalade"},
-            "cloture": {"$avg": "$scores.cloture"}
+            "cloture": {"$avg": "$scores.cloture"},
+            "comprehension": {"$avg": "$scores.comprehension"}
         }}
     ]
     criteria_result = await db.tickets.aggregate(pipeline_criteria).to_list(1)
@@ -446,7 +530,7 @@ async def get_statistics():
     if criteria_result:
         for k, v in criteria_result[0].items():
             if k != "_id" and v is not None:
-                criteria_avg[k] = round(v, 1)
+                criteria_avg[k] = round(v, 2)
 
     # Monthly trend (last 6 months)
     pipeline_monthly = [
@@ -530,6 +614,44 @@ async def reset_templates():
         await db.templates.insert_one(doc)
     templates = await db.templates.find({}, {"_id": 0}).to_list(100)
     return templates
+
+# Agent Comparison
+@api_router.get("/agents/compare")
+async def compare_agents():
+    pipeline = [
+        {"$match": {"agent_name": {"$ne": ""}}},
+        {"$group": {
+            "_id": "$agent_name",
+            "ticket_count": {"$sum": 1},
+            "avg_score": {"$avg": "$score_global"},
+            "avg_procedures": {"$avg": "$scores.procedures"},
+            "avg_priorite": {"$avg": "$scores.priorite"},
+            "avg_description": {"$avg": "$scores.description"},
+            "avg_acquittement": {"$avg": "$scores.acquittement"},
+            "avg_sla": {"$avg": "$scores.sla"},
+            "avg_communication": {"$avg": "$scores.communication"},
+            "avg_diagnostic": {"$avg": "$scores.diagnostic"},
+            "avg_statut": {"$avg": "$scores.statut"},
+            "avg_escalade": {"$avg": "$scores.escalade"},
+            "avg_cloture": {"$avg": "$scores.cloture"},
+            "avg_comprehension": {"$avg": "$scores.comprehension"},
+        }},
+        {"$sort": {"avg_score": -1}}
+    ]
+    agents = await db.tickets.aggregate(pipeline).to_list(100)
+    result = []
+    for a in agents:
+        criteria = {}
+        for c in ALL_CRITERIA:
+            val = a.get(f"avg_{c}")
+            criteria[c] = round(val, 2) if val is not None else None
+        result.append({
+            "agent_name": a["_id"],
+            "ticket_count": a["ticket_count"],
+            "avg_score": round(a["avg_score"], 1) if a["avg_score"] else 0,
+            "criteria": criteria
+        })
+    return result
 
 app.include_router(api_router)
 

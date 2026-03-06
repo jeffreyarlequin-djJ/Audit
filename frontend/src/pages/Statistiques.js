@@ -6,12 +6,13 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar,
   LineChart, Line, CartesianGrid
 } from "recharts";
-import { getScoreColor } from "@/components/ScoreRing";
+import { getScoreColor, getGlobalScoreColor } from "@/components/ScoreRing";
 
 const CRITERIA_LABELS = {
   procedures: "Procedures", priorite: "Priorite", description: "Description",
   acquittement: "Acquittement", sla: "SLA", communication: "Communication",
   diagnostic: "Diagnostic", statut: "Statut", escalade: "Escalade", cloture: "Cloture",
+  comprehension: "Comprehension",
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -175,8 +176,8 @@ export default function Statistiques() {
                   <span className="text-xs font-bold text-slate-400 w-5">{i + 1}</span>
                   <span className="font-mono text-sm">{t.ticket_ref || "N/A"}</span>
                 </div>
-                <span className="font-bold text-sm" style={{ color: getScoreColor(t.score_global) }}>
-                  {t.score_global}/10
+                <span className="font-bold text-sm" style={{ color: getGlobalScoreColor(t.score_global) }}>
+                  {t.score_global}%
                 </span>
               </div>
             ))}
@@ -191,8 +192,8 @@ export default function Statistiques() {
                   <span className="text-xs font-bold text-slate-400 w-5">{i + 1}</span>
                   <span className="font-mono text-sm">{t.ticket_ref || "N/A"}</span>
                 </div>
-                <span className="font-bold text-sm" style={{ color: getScoreColor(t.score_global) }}>
-                  {t.score_global}/10
+                <span className="font-bold text-sm" style={{ color: getGlobalScoreColor(t.score_global) }}>
+                  {t.score_global}%
                 </span>
               </div>
             ))}

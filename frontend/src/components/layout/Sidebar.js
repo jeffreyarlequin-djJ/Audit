@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Search, FileText, Clock, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Search, FileText, Clock, BarChart3, Users } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Tableau de Bord" },
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/templates", icon: FileText, label: "Templates" },
   { to: "/historique", icon: Clock, label: "Historique" },
   { to: "/statistiques", icon: BarChart3, label: "Statistiques" },
+  { to: "/comparatif", icon: Users, label: "Comparatif Agents" },
 ];
 
 export default function Sidebar() {

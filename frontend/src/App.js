@@ -6,6 +6,7 @@ import AnalyseTicket from "@/pages/AnalyseTicket";
 import Templates from "@/pages/Templates";
 import Historique from "@/pages/Historique";
 import Statistiques from "@/pages/Statistiques";
+import Comparatif from "@/pages/Comparatif";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             <Route path="/templates" element={<Templates />} />
             <Route path="/historique" element={<Historique />} />
             <Route path="/statistiques" element={<Statistiques />} />
+            <Route path="/comparatif" element={<Comparatif />} />
           </Routes>
         </main>
         <Toaster position="top-right" />

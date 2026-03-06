@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swiss Telecom QA</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-main">SWISS TELECOM</span>
+        <span class="logo-sub">QUALITY AUDIT</span>
+      </div>
+      <div class="status" id="status">Pret</div>
+    </div>
+
+    <!-- Config -->
+    <div class="config-section">
+      <label class="field-label">URL DE L'APPLICATION</label>
+      <input type="text" id="apiUrl" class="field-input" placeholder="https://votre-app.preview.emergentagent.com" />
+    </div>
+
+    <!-- Capture Section -->
+    <div class="section">
+      <div class="field-row">
+        <div class="field-half">
+          <label class="field-label">REFERENCE TICKET</label>
+          <input type="text" id="ticketRef" class="field-input" placeholder="INC-2024-001234" />
+        </div>
+        <div class="field-half">
+          <label class="field-label">PRIORITE</label>
+          <select id="priority" class="field-input">
+            <option value="">Selectionner</option>
+            <option value="P1 - Critique">P1 - Critique</option>
+            <option value="P2 - Majeur">P2 - Majeur</option>
+            <option value="P3 - Mineur">P3 - Mineur</option>
+            <option value="P4 - Information">P4 - Information</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-full">
+          <label class="field-label">AGENT / TECHNICIEN</label>
+          <input type="text" id="agentName" class="field-input" placeholder="Nom de l'agent" />
+        </div>
+      </div>
+
+      <button id="captureBtn" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        CAPTURER LE CONTENU DE LA PAGE
+      </button>
+
+      <div id="capturedContent" class="captured-content" style="display:none;">
+        <label class="field-label">CONTENU CAPTURE</label>
+        <textarea id="contentText" class="field-textarea" rows="8"></textarea>
+        <div class="char-count"><span id="charCount">0</span> caracteres</div>
+      </div>
+    </div>
+
+    <!-- Analyze Button -->
+    <button id="analyzeBtn" class="btn-analyze" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      LANCER L'ANALYSE
+    </button>
+
+    <!-- Loading -->
+    <div id="loading" class="loading" style="display:none;">
+      <div class="spinner"></div>
+      <span>Analyse en cours...</span>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="results" style="display:none;">
+      <div class="result-header">
+        <div class="score-circle" id="globalScore">0%</div>
+        <div class="result-meta">
+          <span class="result-title">RESULTAT D'ANALYSE</span>
+          <span class="result-label" id="qualityLabel">-</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="scores">Scores</button>
+        <button class="tab" data-tab="details">Details</button>
+        <button class="tab" data-tab="reco">Recommandations</button>
+      </div>
+
+      <div id="tab-scores" class="tab-content active"></div>
+      <div id="tab-details" class="tab-content"></div>
+      <div id="tab-reco" class="tab-content"></div>
+
+      <button id="openAppBtn" class="btn-secondary" style="margin-top:12px;">
+        OUVRIR DANS L'APPLICATION
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

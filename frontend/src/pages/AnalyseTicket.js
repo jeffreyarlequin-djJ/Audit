@@ -19,20 +19,31 @@ const CRITERIA_LABELS = {
   statut: "Statut",
   escalade: "Escalade",
   cloture: "Cloture",
+  comprehension: "Comprehension",
 };
 
+const SCORE_LABELS = { "-1": "NA", "0": "Mauvais", "1": "Moyen", "2": "Bon" };
 const PRIORITY_OPTIONS = ["P1 - Critique", "P2 - Majeur", "P3 - Mineur", "P4 - Information"];
 
 function ScoreIcon({ score }) {
-  if (score >= 7) return <CheckCircle size={16} className="text-emerald-500" />;
-  if (score >= 4) return <AlertTriangle size={16} className="text-amber-500" />;
+  if (score === -1) return <span className="text-slate-400 text-xs font-bold">NA</span>;
+  if (score === 2) return <CheckCircle size={16} className="text-emerald-500" />;
+  if (score === 1) return <AlertTriangle size={16} className="text-amber-500" />;
   return <XCircle size={16} className="text-red-500" />;
+}
+
+function ScoreBadge({ score }) {
+  if (score === -1) return <span className="bg-slate-100 text-slate-500 border border-slate-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1 rounded-sm">NA</span>;
+  if (score === 2) return <span className="bg-emerald-100 text-emerald-700 border border-emerald-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1 rounded-sm">Bon</span>;
+  if (score === 1) return <span className="bg-amber-100 text-amber-700 border border-amber-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1 rounded-sm">Moyen</span>;
+  return <span className="bg-red-100 text-red-700 border border-red-200 uppercase text-[10px] font-bold tracking-widest px-2 py-1 rounded-sm">Mauvais</span>;
 }
 
 export default function AnalyseTicket() {
   const [content, setContent] = useState("");
   const [ticketRef, setTicketRef] = useState("");
   const [priority, setPriority] = useState("");
+  const [agentName, setAgentName] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -44,7 +55,7 @@ export default function AnalyseTicket() {
     }
     setLoading(true);
     try {
-      const res = await analyzeTicket({ content, ticket_ref: ticketRef, priority });
+      const res = await analyzeTicket({ content, ticket_ref: ticketRef, priority, agent_name: agentName });
       setResult(res.data);
       setSheetOpen(true);
       toast.success("Analyse terminee avec succes");
@@ -67,7 +78,7 @@ export default function AnalyseTicket() {
         {/* Input Area */}
         <div className="md:col-span-8">
           <div className="bg-white border border-slate-200 rounded-sm p-6">
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400 block mb-2">
                   Reference Ticket
@@ -94,6 +105,19 @@ export default function AnalyseTicket() {
                   <option value="">Selectionner...</option>
                   {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400 block mb-2">
+                  Agent / Technicien
+                </label>
+                <input
+                  data-testid="agent-name-input"
+                  type="text"
+                  value={agentName}
+                  onChange={e => setAgentName(e.target.value)}
+                  placeholder="Nom de l'agent"
+                  className="w-full border border-slate-300 rounded-sm px-3 py-2 text-sm focus:border-orange-500 focus:outline-none bg-slate-50/50"
+                />
               </div>
             </div>
             <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400 block mb-2">
@@ -127,7 +151,7 @@ export default function AnalyseTicket() {
           <div className="bg-white border border-slate-200 rounded-sm p-6">
             <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-4">Guide d'Analyse</p>
             <div className="space-y-3 text-sm text-slate-600">
-              <p>L'analyse IA evalue votre ticket sur <strong>10 criteres</strong> :</p>
+              <p>L'analyse IA evalue votre ticket sur <strong>11 criteres</strong> :</p>
               <ul className="space-y-1.5">
                 {Object.entries(CRITERIA_LABELS).map(([k, v]) => (
                   <li key={k} className="flex items-center gap-2">
@@ -137,7 +161,7 @@ export default function AnalyseTicket() {
                 ))}
               </ul>
               <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">
-                Chaque critere est note de 0 a 10. Le score global est la moyenne des 10 criteres.
+                Bareme : NA (non visible), 0 = Mauvais, 1 = Moyen, 2 = Bon. Score global en % sur 100.
               </p>
             </div>
           </div>
@@ -151,7 +175,7 @@ export default function AnalyseTicket() {
             <>
               <SheetHeader className="p-6 border-b border-slate-200 bg-slate-50">
                 <div className="flex items-start gap-4">
-                  <ScoreRing score={result.score_global} size="lg" />
+                  <ScoreRing score={result.score_global} size="lg" isPercent />
                   <div className="flex-1">
                     <SheetTitle className="text-2xl font-bold tracking-tight uppercase"
                       style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
@@ -160,8 +184,9 @@ export default function AnalyseTicket() {
                     <SheetDescription asChild className="mt-1">
                       <div>
                         {result.ticket_ref && <span className="font-mono text-sm mr-3">{result.ticket_ref}</span>}
+                        {result.agent_name && <span className="text-xs text-slate-500 mr-3">Agent: {result.agent_name}</span>}
                         <Badge variant="outline" className="uppercase text-[10px] font-bold tracking-widest">
-                          {getScoreLabel(result.score_global)}
+                          {result.score_global >= 80 ? "Excellent" : result.score_global >= 50 ? "Moyen" : "Faible"}
                         </Badge>
                       </div>
                     </SheetDescription>
@@ -184,16 +209,12 @@ export default function AnalyseTicket() {
                     {Object.entries(result.scores || {}).map(([key, val]) => (
                       <div key={key} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-sm">
                         <ScoreIcon score={val} />
-                        <span className="text-xs font-bold tracking-widest uppercase text-slate-500 w-28">
+                        <span className="text-xs font-bold tracking-widest uppercase text-slate-500 w-32">
                           {CRITERIA_LABELS[key] || key}
                         </span>
                         <div className="flex-1">
-                          <Progress value={val * 10} className="h-2 bg-slate-200"
-                            style={{ '--tw-bg-opacity': 1 }} />
+                          <ScoreBadge score={val} />
                         </div>
-                        <span className="font-bold text-sm w-12 text-right" style={{ color: getScoreColor(val) }}>
-                          {val}/10
-                        </span>
                       </div>
                     ))}
                   </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getDashboard } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import ScoreRing, { getScoreLabel, getScoreColor } from "@/components/ScoreRing";
+import ScoreRing, { getScoreLabel, getScoreColor, getGlobalScoreColor } from "@/components/ScoreRing";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, PieChart, Pie, Cell } from "recharts";
 import { Activity, TrendingUp, Shield, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,7 @@ const CRITERIA_LABELS = {
   statut: "Statut",
   escalade: "Escalade",
   cloture: "Cloture",
+  comprehension: "Comprehension",
 };
 
 const CHART_COLORS = ["#0F172A", "#FF5722", "#94A3B8", "#CBD5E1"];
@@ -127,9 +128,9 @@ export default function Dashboard() {
       {/* KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <KpiCard icon={Activity} label="Tickets Analyses" value={data.total_tickets} />
-        <KpiCard icon={Target} label="Score Moyen" value={`${data.avg_score}/10`} accent />
+        <KpiCard icon={Target} label="Score Moyen" value={`${data.avg_score}%`} accent />
         <KpiCard icon={Shield} label="Conformite SLA" value={`${data.sla_rate}%`} />
-        <KpiCard icon={TrendingUp} label="Excellent" value={data.score_distribution?.excellent || 0} sub="Score >= 8/10" />
+        <KpiCard icon={TrendingUp} label="Excellent" value={data.score_distribution?.excellent || 0} sub="Score >= 80%" />
       </div>
 
       {/* Charts Row */}
@@ -214,8 +215,8 @@ export default function Dashboard() {
                       </Badge>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className="font-bold" style={{ color: getScoreColor(t.score_global) }}>
-                        {t.score_global}/10
+                      <span className="font-bold" style={{ color: getGlobalScoreColor(t.score_global) }}>
+                        {t.score_global}%
                       </span>
                     </td>
                     <td className="py-3 text-slate-500 text-xs">

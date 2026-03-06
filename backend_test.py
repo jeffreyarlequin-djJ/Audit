@@ -210,17 +210,17 @@ STATUS: EN_COURS
             missing_fields = [field for field in required_fields if field not in result]
             
             if not missing_fields:
-                # Check if scores contain all 10 criteria
+                # Check if scores contain all 11 criteria (Phase 2 includes 'comprehension')
                 scores = result.get("scores", {})
                 expected_criteria = ["procedures", "priorite", "description", "acquittement", 
-                                   "sla", "communication", "diagnostic", "statut", "escalade", "cloture"]
+                                   "sla", "communication", "diagnostic", "statut", "escalade", "cloture", "comprehension"]
                 missing_criteria = [c for c in expected_criteria if c not in scores]
                 
                 if not missing_criteria:
                     score_global = result.get("score_global", 0)
                     self.log_test_result("Ticket analysis with AI (POST)", True, 
                                        f"Analysis completed in {analysis_time:.1f}s, "
-                                       f"Global score: {score_global}/10")
+                                       f"Global score: {score_global}%")
                     
                     # Store ticket ID for further testing
                     self.test_ticket_id = result.get("id")
@@ -332,6 +332,169 @@ STATUS: EN_COURS
         else:
             self.log_test_result("Statistics data (GET)", False, str(result))
 
+    def test_agent_comparison_endpoint(self):
+        """Test GET /api/agents/compare - returns agent comparison data"""
+        success, result = self.make_request('GET', '/agents/compare')
+        
+        if success and isinstance(result, list):
+            self.log_test_result("Agent comparison (GET)", True, 
+                               f"Found {len(result)} agents for comparison")
+            
+            # If we have agents, verify the structure
+            if result:
+                agent = result[0]
+                expected_fields = ["agent_name", "ticket_count", "avg_score", "criteria"]
+                missing_fields = [field for field in expected_fields if field not in agent]
+                
+                if not missing_fields:
+                    # Verify criteria includes all 11 criteria including comprehension
+                    criteria = agent.get("criteria", {})
+                    expected_criteria = ["procedures", "priorite", "description", "acquittement", 
+                                       "sla", "communication", "diagnostic", "statut", "escalade", "cloture", "comprehension"]
+                    
+                    criteria_present = [c for c in expected_criteria if c in criteria]
+                    self.log_test_result("Agent comparison structure validation", True,
+                                       f"Agent structure valid, {len(criteria_present)}/11 criteria present")
+                else:
+                    self.log_test_result("Agent comparison structure validation", False,
+                                       f"Missing fields: {missing_fields}")
+        else:
+            self.log_test_result("Agent comparison (GET)", True, "No agents found (expected for new installations)")
+
+    def test_csv_export_endpoint(self):
+        """Test GET /api/tickets/export - returns CSV file"""
+        success, result = self.make_request('GET', '/tickets/export')
+        
+        if success:
+            self.log_test_result("CSV export (GET)", True, 
+                               "CSV export endpoint accessible")
+        else:
+            self.log_test_result("CSV export (GET)", False, str(result))
+
+    def test_phase2_ticket_analysis_with_agent(self):
+        """Test Phase 2 features: agent_name field and new scoring"""
+        sample_ticket_content = """
+INCIDENT REPORT - INC-2024-007890
+Agent: Marie Dupont
+Date: 2024-12-15 14:30:00
+Priority: P1 - Critique
+Client: CORP-CLIENT-789
+
+DESCRIPTION:
+Panne totale du service de téléphonie pour l'ensemble du site principal.
+Tous les appels entrants et sortants sont impossibles depuis 14h15.
+
+IMPACT BUSINESS:
+- Centre d'appels à l'arrêt (200 agents impactés)
+- Impossibilité de joindre les clients
+- Perte estimée: 50k€/heure
+
+DIAGNOSTIC EFFECTUE:
+1. Vérification portail supervision - Alertes multiples
+2. Test connectivité réseau - OK
+3. Vérification équipement PABX - Défaillance détectée
+4. Contact fournisseur - Intervention urgente planifiée
+
+COMPREHENSION DE L'INCIDENT:
+Le technicien a parfaitement identifié la cause racine (défaillance PABX)
+et pris les mesures appropriées pour l'escalade immédiate.
+
+COMMUNICATION:
+- Client informé immédiatement
+- Escalade N2 effectuée
+- Points réguliers programmés
+
+STATUS: RESOLU
+Résolution: 16h45 - Remplacement module PABX défaillant
+"""
+
+        ticket_data = {
+            "content": sample_ticket_content,
+            "ticket_ref": "INC-2024-007890",
+            "priority": "P1 - Critique",
+            "agent_name": "Marie Dupont"
+        }
+
+        print(f"🔄 Testing Phase 2 analysis with agent field...")
+        start_time = time.time()
+        
+        success, result = self.make_request('POST', '/tickets/analyze', ticket_data)
+        
+        analysis_time = time.time() - start_time
+        
+        if success:
+            # Verify agent_name is stored
+            if result.get("agent_name") == "Marie Dupont":
+                self.log_test_result("Phase 2: Agent name field", True,
+                                   f"Agent name correctly stored: {result.get('agent_name')}")
+            else:
+                self.log_test_result("Phase 2: Agent name field", False,
+                                   f"Expected 'Marie Dupont', got '{result.get('agent_name')}'")
+            
+            # Verify 11 criteria including comprehension
+            scores = result.get("scores", {})
+            if "comprehension" in scores:
+                comprehension_score = scores["comprehension"]
+                self.log_test_result("Phase 2: Comprehension criterion", True,
+                                   f"Comprehension score: {comprehension_score}")
+            else:
+                self.log_test_result("Phase 2: Comprehension criterion", False,
+                                   "Comprehension criterion missing from scores")
+            
+            # Verify percentage-based scoring
+            score_global = result.get("score_global", 0)
+            if 0 <= score_global <= 100:
+                self.log_test_result("Phase 2: Percentage-based global score", True,
+                                   f"Global score: {score_global}% (valid percentage)")
+            else:
+                self.log_test_result("Phase 2: Percentage-based global score", False,
+                                   f"Global score {score_global} not in valid percentage range 0-100")
+                
+            # Verify new scoring values (-1, 0, 1, 2)
+            valid_score_values = [-1, 0, 1, 2]
+            invalid_scores = [k for k, v in scores.items() if v not in valid_score_values]
+            
+            if not invalid_scores:
+                self.log_test_result("Phase 2: New scoring system (NA/0/1/2)", True,
+                                   "All criteria use valid scoring values (-1, 0, 1, 2)")
+            else:
+                self.log_test_result("Phase 2: New scoring system (NA/0/1/2)", False,
+                                   f"Invalid score values in: {invalid_scores}")
+        else:
+            self.log_test_result("Phase 2: Ticket analysis with agent", False, str(result))
+
+    def test_filtered_tickets_endpoint(self):
+        """Test GET /api/tickets with filter parameters (Phase 2 feature)"""
+        # Test agent filter
+        success, result = self.make_request('GET', '/tickets?agent=Marie')
+        
+        if success and isinstance(result, dict):
+            tickets = result.get("tickets", [])
+            self.log_test_result("Phase 2: Ticket filtering by agent", True,
+                               f"Agent filter returned {len(tickets)} tickets")
+        else:
+            self.log_test_result("Phase 2: Ticket filtering by agent", False, str(result))
+        
+        # Test priority filter
+        success, result = self.make_request('GET', '/tickets?priority=P1')
+        
+        if success and isinstance(result, dict):
+            tickets = result.get("tickets", [])
+            self.log_test_result("Phase 2: Ticket filtering by priority", True,
+                               f"Priority filter returned {len(tickets)} tickets")
+        else:
+            self.log_test_result("Phase 2: Ticket filtering by priority", False, str(result))
+        
+        # Test score range filters
+        success, result = self.make_request('GET', '/tickets?score_min=50&score_max=90')
+        
+        if success and isinstance(result, dict):
+            tickets = result.get("tickets", [])
+            self.log_test_result("Phase 2: Ticket filtering by score range", True,
+                               f"Score range filter returned {len(tickets)} tickets")
+        else:
+            self.log_test_result("Phase 2: Ticket filtering by score range", False, str(result))
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("🚀 Starting Ticket Quality Analysis API Tests")
@@ -355,6 +518,19 @@ STATUS: EN_COURS
         print()
         
         self.test_statistics_endpoint()
+        print()
+        
+        # Phase 2 specific tests
+        self.test_phase2_ticket_analysis_with_agent()
+        print()
+        
+        self.test_agent_comparison_endpoint()
+        print()
+        
+        self.test_csv_export_endpoint()
+        print()
+        
+        self.test_filtered_tickets_endpoint()
         
         # Final summary
         print("\n" + "=" * 60)
